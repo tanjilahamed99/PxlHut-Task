@@ -1,6 +1,7 @@
 <!-- project start -->
 
 <!-- basic -->
+Basic
 - first i created 3 state to render the 3 steps conditionally
 - added 2 button to navigate one step to another step
 
@@ -11,4 +12,4 @@ React hook from
 
 <!-- zod validation -->
 Zod validation
--use zod for validate all the data by given requirement and show the error if the value don't match with condition
+- use zod for validate all the data by given requirement and show the error if the value don't match with condition
