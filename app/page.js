@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Swal from "sweetalert2";
+import { useMutation } from "@tanstack/react-query";
 
 // 1. Create the Zod schema
 const zodSchema = z
@@ -34,27 +35,41 @@ export default function Home() {
   const {
     register,
     handleSubmit,
-    watch,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(zodSchema),
     mode: "onTouched",
   });
-
-  const onSubmit = (data) => {
-    console.log("Form Data:", data);
-
-    Swal.fire({
-      title: "Good job!",
-      text: "Account create completed",
-      icon: "success",
-    });
-  };
-
   const [stepOne, setStepOne] = useState(true);
   const [stepTwo, setStepTwo] = useState(false);
   const [stepThree, setStepThree] = useState(false);
+  const [userData, setUserData] = useState();
 
+  // tanstack query mutate method for data sending at backend
+  const { mutate } = useMutation({
+    mutationFn: async (data) => {
+      const response = await axios.post("/api/your-endpoint", data);
+      return response.data;
+    },
+    onSuccess: () => {
+      handleCloseModal();
+    },
+    onError: (error) => {
+      // Swal.fire({
+      //   title: "Error!",
+      //   text: error?.response?.data?.message || "Something went wrong",
+      //   icon: "error",
+      // });
+    },
+  });
+
+  // react hook form function
+  const onSubmit = (data) => {
+    setUserData({ ...data });
+    document.getElementById("my_modal_1").showModal();
+  };
+
+  // send next step
   const handleNext = (e) => {
     e.preventDefault();
     if (stepOne) {
@@ -66,6 +81,7 @@ export default function Home() {
     }
   };
 
+  // back previews step
   const handlePrev = () => {
     if (stepThree) {
       setStepThree(false);
@@ -76,54 +92,80 @@ export default function Home() {
     }
   };
 
+  // close modal
+  const handleCloseModal = () => {
+    document.getElementById("my_modal_1").close();
+  };
+
+  // sending data at backend and show preview-
+  const handleSendDataAtBackend = () => {
+    console.log(userData);
+    Swal.fire({
+      title: "Good job!",
+      text: "Account create completed",
+      icon: "success",
+    });
+    mutate(userData);
+    handleCloseModal();
+  };
+
   return (
-    <div className="container mx-auto flex items-center justify-center h-[100vh] text-black">
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 text-black px-4">
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="border border-gray-700 w-[40%] p-5 rounded-lg space-y-4"
+        className="w-full max-w-xl bg-white shadow-lg border border-gray-300 rounded-2xl p-8 space-y-6"
       >
         {stepOne && (
           <>
-            <h2 className="text-2xl font-bold text-center mb-5">
+            <h2 className="text-3xl font-semibold text-center text-gray-800">
               Personal Information
             </h2>
+
             <div>
-              <h2 className="font-medium mb-1">Full Name</h2>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Full Name
+              </label>
               <input
-                className="input bg-white text-black border-black w-full"
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 {...register("fullName")}
                 placeholder="ex: Tanjil"
               />
               {errors.fullName && (
-                <p className="text-red-500 text-sm font-bold mt-2">
+                <p className="text-red-500 text-sm mt-1">
                   {errors.fullName.message}
                 </p>
               )}
             </div>
+
             <div>
-              <h2 className="font-medium mb-1">Email</h2>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Email
+              </label>
               <input
-                className="input bg-white text-black border-black w-full"
-                {...register("email")}
                 type="email"
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                {...register("email")}
                 placeholder="example@gmail.com"
               />
               {errors.email && (
-                <p className="text-red-500 text-sm font-bold mt-2">
+                <p className="text-red-500 text-sm mt-1">
                   {errors.email.message}
                 </p>
               )}
             </div>
+
             <div>
-              <h2 className="font-medium mb-1">Phone Number</h2>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Phone Number
+              </label>
               <input
-                className="input bg-white text-black border-black w-full"
+                type="number"
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 {...register("phoneNumber")}
-                type="text"
                 placeholder="+88"
               />
               {errors.phoneNumber && (
-                <p className="text-red-500 text-sm font-bold mt-2">
+                <p className="text-red-500 text-sm mt-1">
                   {errors.phoneNumber.message}
                 </p>
               )}
@@ -133,46 +175,55 @@ export default function Home() {
 
         {stepTwo && (
           <>
-            <h2 className="text-2xl font-bold text-center mb-5">
+            <h2 className="text-3xl font-semibold text-center text-gray-800">
               Address Details
             </h2>
+
             <div>
-              <h2 className="font-medium mb-1">Street Address</h2>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Street Address
+              </label>
               <input
-                className="input bg-white text-black border-black w-full"
-                {...register("streetAddress")}
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                {...register("streetAddress", { required: true })}
                 placeholder="ex: saheprotab"
               />
               {errors.streetAddress && (
-                <p className="text-red-500 text-sm font-bold mt-2">
+                <p className="text-red-500 text-sm mt-1">
                   {errors.streetAddress.message}
                 </p>
               )}
             </div>
+
             <div>
-              <h2 className="font-medium mb-1">City</h2>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                City
+              </label>
               <input
-                className="input bg-white text-black border-black w-full"
-                {...register("city")}
                 type="text"
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                {...register("city", { required: true })}
                 placeholder="ex: Narsingdi"
               />
               {errors.city && (
-                <p className="text-red-500 text-sm font-bold mt-2">
+                <p className="text-red-500 text-sm mt-1">
                   {errors.city.message}
                 </p>
               )}
             </div>
+
             <div>
-              <h2 className="font-medium mb-1">Zip code</h2>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Zip Code
+              </label>
               <input
-                className="input bg-white text-black border-black w-full"
-                {...register("zipcode")}
-                type="text"
+                type="number"
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                {...register("zipcode", { required: true })}
                 placeholder="ex: 1600"
               />
               {errors.zipcode && (
-                <p className="text-red-500 text-sm font-bold mt-2">
+                <p className="text-red-500 text-sm mt-1">
                   {errors.zipcode.message}
                 </p>
               )}
@@ -182,46 +233,55 @@ export default function Home() {
 
         {stepThree && (
           <>
-            <h2 className="text-2xl font-bold text-center mb-5">
+            <h2 className="text-3xl font-semibold text-center text-gray-800">
               Account Setup
             </h2>
+
             <div>
-              <h2 className="font-medium mb-1">UserName</h2>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Username
+              </label>
               <input
-                className="input bg-white text-black border-black w-full"
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 {...register("userName")}
                 placeholder="ex: Tanjil"
               />
               {errors.userName && (
-                <p className="text-red-500 text-sm font-bold mt-2">
+                <p className="text-red-500 text-sm mt-1">
                   {errors.userName.message}
                 </p>
               )}
             </div>
+
             <div>
-              <h2 className="font-medium mb-1">Password</h2>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Password
+              </label>
               <input
-                className="input bg-white text-black border-black w-full"
-                {...register("password")}
                 type="password"
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                {...register("password")}
                 placeholder="password"
               />
               {errors.password && (
-                <p className="text-red-500 text-sm font-bold mt-2">
+                <p className="text-red-500 text-sm mt-1">
                   {errors.password.message}
                 </p>
               )}
             </div>
+
             <div>
-              <h2 className="font-medium mb-1">Confirm Password</h2>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Confirm Password
+              </label>
               <input
-                className="input bg-white text-black border-black w-full"
-                {...register("confirmPass")}
                 type="password"
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                {...register("confirmPass")}
                 placeholder="confirm password"
               />
               {errors.confirmPass && (
-                <p className="text-red-500 text-sm font-bold mt-2">
+                <p className="text-red-500 text-sm mt-1">
                   {errors.confirmPass.message}
                 </p>
               )}
@@ -229,34 +289,99 @@ export default function Home() {
           </>
         )}
 
-        <div className="flex items-center justify-between">
-          {stepOne ? (
-            <div></div>
-          ) : (
+        <div className="flex items-center justify-between pt-4">
+          {!stepOne && (
             <button
-              onClick={handlePrev}
-              className="btn btn-outline"
               type="button"
+              onClick={handlePrev}
+              className="px-6 py-2 border border-gray-400 rounded-lg hover:bg-gray-200 transition"
             >
               Prev
             </button>
           )}
 
-          {stepThree ? (
-            <button className="btn btn-outline" type="submit">
-              Submit
-            </button>
-          ) : (
-            <button
-              className="btn btn-outline"
-              onClick={handleNext}
-              type="button"
-            >
-              Next
-            </button>
-          )}
+          <div className="ml-auto">
+            {stepThree ? (
+              <button
+                type="submit"
+                className="px-6 py-2 cursor-pointer bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+              >
+                Submit
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleNext}
+                className="px-6 py-2 bg-blue-600 cursor-pointer text-white rounded-lg hover:bg-blue-700 transition"
+              >
+                Next
+              </button>
+            )}
+          </div>
         </div>
       </form>
+
+      {/* Open the modal using document.getElementById('ID').showModal() method */}
+      <dialog id="my_modal_1" className="modal">
+        <div className="modal-box bg-white rounded-xl shadow-xl max-w-xl">
+          <h2 className="text-2xl font-bold mb-4 text-center text-gray-800">
+            Submitted Information
+          </h2>
+          <div className="space-y-2 text-gray-700 text-sm">
+            <div className="flex justify-between">
+              <span className="font-medium">Full Name:</span>
+              <span>{userData?.fullName}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-medium">Email:</span>
+              <span>{userData?.email}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-medium">Phone Number:</span>
+              <span>{userData?.phoneNumber}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-medium">Street Address:</span>
+              <span>{userData?.streetAddress}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-medium">City:</span>
+              <span>{userData?.city}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-medium">Zip Code:</span>
+              <span>{userData?.zipcode}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-medium">Username:</span>
+              <span>{userData?.userName}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-medium">Password:</span>
+              <span>{userData?.password}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-medium">Confirm Password:</span>
+              <span>{userData?.confirmPass}</span>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 mt-6">
+            <button
+              onClick={handleCloseModal}
+              className="px-4 py-2 rounded-md border border-red-500 text-red-500 hover:bg-red-50 transition"
+            >
+              Close
+            </button>
+            <button
+              onClick={handleSendDataAtBackend}
+              className="px-4 py-2 rounded-md border border-green-600 text-green-600 hover:bg-green-50 transition"
+            >
+              Submit
+            </button>
+          </div>
+        </div>
+      </dialog>
     </div>
   );
 }
